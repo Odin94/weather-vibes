@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Odin94/weather-vibes/weather-vibes"
+	"github.com/Odin94/weather-vibes/src"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

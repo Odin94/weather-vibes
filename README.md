@@ -39,10 +39,10 @@ A terminal-based weather application built with Go and Bubble Tea. Get current w
 ### Quick Install (if Go is installed)
 
 ```bash
-go install github.com/Odin94/weather-vibes@latest
+go install github.com/Odin94/weather-vibes@main
 ```
 
-Then run as `weather-vibes`.
+Then run as `weather-vibes` from your gopath/bin folder (it's probably in your path and you can run it from anywhere).
 
 ## Used APIs
 
