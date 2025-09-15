@@ -1,29 +1,30 @@
 package weathervibes
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
-	spinner    Spinner
-	loading    bool
-	location   *GeoResponse
-	weather    *WeatherResponse
-	err        error
-	quitting   bool
+	spinner       Spinner
+	loading       bool
+	location      *GeoResponse
+	weather       *WeatherResponse
+	weeklyWeather *WeeklyWeatherResponse
+	selectedDay   int
+	err           error
+	quitting      bool
 }
 
 type LocationMsg GeoResponse
 type WeatherMsg WeatherResponse
+type WeeklyWeatherMsg WeeklyWeatherResponse
 type ErrMsg error
 
 func NewModel() Model {
 	return Model{
-		spinner: NewSpinner(),
-		loading: true,
+		spinner:     NewSpinner(),
+		loading:     true,
+		selectedDay: 0, // Start with today (index 0)
 	}
 }
 
@@ -44,17 +45,43 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			m.loading = true
 			return m, fetchLocation()
+		case "left", "h":
+			// Navigate to previous day
+			if m.weeklyWeather != nil && m.selectedDay > 0 {
+				m.selectedDay--
+			}
+			return m, nil
+		case "right", "l":
+			// Navigate to next day
+			if m.weeklyWeather != nil && m.selectedDay < len(m.weeklyWeather.Daily.Time)-1 {
+				m.selectedDay++
+			}
+			return m, nil
 		default:
 			return m, nil
 		}
 
 	case LocationMsg:
 		m.location = (*GeoResponse)(&msg)
-		return m, fetchWeather(m.location.Lat, m.location.Lon)
+		return m, tea.Batch(
+			fetchWeather(m.location.Lat, m.location.Lon),
+			fetchWeeklyWeather(m.location.Lat, m.location.Lon),
+		)
 
 	case WeatherMsg:
 		m.weather = (*WeatherResponse)(&msg)
-		m.loading = false
+		// Only stop loading if we have both current and weekly weather
+		if m.weeklyWeather != nil {
+			m.loading = false
+		}
+		return m, nil
+
+	case WeeklyWeatherMsg:
+		m.weeklyWeather = (*WeeklyWeatherResponse)(&msg)
+		// Only stop loading if we have both current and weekly weather
+		if m.weather != nil {
+			m.loading = false
+		}
 		return m, nil
 
 	case ErrMsg:
@@ -68,33 +95,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-}
-
-func (m Model) View() string {
-	if m.err != nil {
-		return fmt.Sprintf("Error: %v\n\nPress q to quit. Press r to reload.", m.err)
-	}
-
-	if m.loading {
-		return fmt.Sprintf("\n\n   %s Loading weather data...\n\nPress q to quit.", m.spinner.View())
-	}
-
-	if m.location != nil && m.weather != nil {
-		temperature := m.weather.CurrentWeather.Temperature2m
-		unit := m.weather.CurrentUnits.Temperature2m
-		
-		style := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("62")).
-			Padding(1, 2)
-
-		content := fmt.Sprintf("🌍 %s, %s\n", m.location.City, m.location.Country)
-		content += fmt.Sprintf("🌡️ Temperature: %.1f %s", temperature, unit)
-
-		return style.Render(content) + "\n\nPress q to quit. Press r to reload."
-	}
-
-	return "Loading..."
 }
 
 func fetchLocation() tea.Cmd {
@@ -114,5 +114,15 @@ func fetchWeather(lat, lon float64) tea.Cmd {
 			return ErrMsg(err)
 		}
 		return WeatherMsg(weather)
+	}
+}
+
+func fetchWeeklyWeather(lat, lon float64) tea.Cmd {
+	return func() tea.Msg {
+		weeklyWeather, err := GetWeeklyWeather(lat, lon)
+		if err != nil {
+			return ErrMsg(err)
+		}
+		return WeeklyWeatherMsg(weeklyWeather)
 	}
 }
