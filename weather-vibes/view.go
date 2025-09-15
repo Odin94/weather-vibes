@@ -46,8 +46,13 @@ func (m Model) View() string {
 			Padding(1, 2).
 			Width(30)
 
-		currentContent := lipgloss.NewStyle().Underline(true).Render("Current") + "\n\n"
-		currentContent += fmt.Sprintf("🌍 %s, %s\n", m.location.City, m.location.Country)
+		currentContent := lipgloss.NewStyle().Underline(true).Render(fmt.Sprintf("Current - %s, %s", m.location.City, m.location.Country)) + "\n\n"
+		
+		currentWeatherCode := m.weather.CurrentWeather.WeatherCode
+		currentWeatherDesc := GetWeatherDescription(currentWeatherCode)
+		currentWeatherEmoji := GetWeatherEmoji(currentWeatherDesc)
+		currentContent += fmt.Sprintf("%s %s\n", currentWeatherEmoji, currentWeatherDesc)
+		
 		currentContent += fmt.Sprintf("🌡️ Temperature: %.1f %s", temperature, temperatureUnit)
 		
 		if rain > 0 {
