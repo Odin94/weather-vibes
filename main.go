@@ -1,30 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"github.com/Odin94/weather-vibes/src/apis"
+	"os"
+
+	"github.com/Odin94/weather-vibes/weather-vibes"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
-	location, err := apis.GetGeolocation()
-	if err != nil {
+	model := weathervibes.NewModel()
+	p := tea.NewProgram(model)
+	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
-
-	fmt.Printf("City: %s, %s\n", location.City, location.Country)
-	fmt.Printf("Coordinates: Lat %f, Lon %f\n", location.Lat, location.Lon)
-
-	weather, err := apis.GetWeather(location.Lat, location.Lon)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// TODOdin: Add Rain, Snowfall, Showers, Precipitation
-	temperature, unit := weather.CurrentWeather.Temperature2m, weather.CurrentUnits.Temperature2m
-
-	// TODOdin: Add cool artsy bubble tea interface  (maybe visualize the weather with an animation for rainfall etc...?)
-	fmt.Printf("\n\n-----------\n\n")
-	fmt.Printf("Temperature: %.1f %s", temperature, unit)
-	fmt.Printf("\n")
 }
